@@ -136,8 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ================= REVIEWS SYSTEM LOGIC =================
-let currentUser = null;
-let currentUserProfile = null;
 
 // Check auth state for review form and user info
 async function checkAuthForReviews() {
