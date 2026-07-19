@@ -89,11 +89,22 @@ async function loadShopStats() {
     if (!statProducts && !statCustomers && !statRating) return;
 
     try {
+        // Fetch average rating dynamically from reviews
+        const { data: reviewsData } = await window.supabase
+            .from('reviews')
+            .select('rating');
+        
+        let avgRating = 5.0;
+        if (reviewsData && reviewsData.length > 0) {
+            const totalRating = reviewsData.reduce((sum, r) => sum + r.rating, 0);
+            avgRating = (totalRating / reviewsData.length).toFixed(1);
+        }
+        if (statRating) statRating.textContent = `${avgRating}★`;
+
         const { data, error } = await window.supabase.rpc('get_shop_stats');
         if (!error && data) {
             if (statProducts) statProducts.textContent = `${data.products_count || 0}`;
             if (statCustomers) statCustomers.textContent = `${data.profiles_count || 0}+`;
-            if (statRating) statRating.textContent = `5.0★`;
         } else {
             // Fallback: Query public products table count safely
             const { data: prodData, error: prodErr } = await window.supabase
