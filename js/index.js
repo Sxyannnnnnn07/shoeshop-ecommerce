@@ -125,4 +125,257 @@ window.quickAddCart = quickAddCart;
 document.addEventListener('DOMContentLoaded', () => {
     loadFeaturedProducts();
     loadShopStats();
+    
+    // Initialize reviews system
+    checkAuthForReviews().then(() => {
+        loadReviews();
+        initStarRatingSelection();
+    });
+
+    document.getElementById('submitReviewForm')?.addEventListener('submit', handleReviewSubmit);
 });
+
+// ================= REVIEWS SYSTEM LOGIC =================
+let currentUser = null;
+let currentUserProfile = null;
+
+// Check auth state for review form and user info
+async function checkAuthForReviews() {
+    const authWrapper = document.getElementById('reviewFormAuthWrapper');
+    const noAuthWrapper = document.getElementById('reviewFormNoAuthWrapper');
+    if (!authWrapper || !noAuthWrapper) return;
+
+    try {
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            // Fetch profile for user name
+            const { data: profile } = await window.supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single();
+            
+            currentUserProfile = profile;
+            
+            authWrapper.style.display = 'block';
+            noAuthWrapper.style.display = 'none';
+        } else {
+            currentUser = null;
+            currentUserProfile = null;
+            authWrapper.style.display = 'none';
+            noAuthWrapper.style.display = 'block';
+        }
+    } catch (err) {
+        console.error("Auth check for reviews failed:", err);
+    }
+}
+
+// Fetch and render reviews from Supabase
+async function loadReviews() {
+    const listContainer = document.getElementById('reviewsList');
+    const avgEl = document.getElementById('reviewsAvg');
+    if (!listContainer) return;
+
+    try {
+        const { data: reviews, error } = await window.supabase
+            .from('reviews')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (reviews.length === 0) {
+            listContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-regular fa-comment-dots" style="font-size: 36px; margin-bottom: 12px;"></i>
+                <p>ยังไม่มีการรีวิวสินค้าในขณะนี้ ร่วมเป็นคนแรกที่รีวิวกันเลย!</p>
+            </div>`;
+            if (avgEl) avgEl.textContent = '5.0★';
+            return;
+        }
+
+        // Calculate average rating
+        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+        const avgRating = (totalRating / reviews.length).toFixed(1);
+        if (avgEl) avgEl.textContent = `${avgRating}★`;
+
+        // Check if current user is admin to show delete buttons
+        const isAdmin = currentUserProfile?.role === 'admin';
+
+        listContainer.innerHTML = reviews.map(review => {
+            const date = new Date(review.created_at).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            // Star HTML string
+            const starsHtml = '<i class="fa-solid fa-star"></i>'.repeat(review.rating) + 
+                              '<i class="fa-regular fa-star"></i>'.repeat(5 - review.rating);
+
+            // Delete button for admins only
+            const deleteBtnHtml = isAdmin
+                ? `<button class="review-delete-btn" onclick="handleDeleteReview('${review.id}')" title="ลบความคิดเห็น">
+                    <i class="fa-regular fa-trash-can"></i>
+                   </button>`
+                : '';
+
+            return `
+                <div class="review-card-item">
+                    ${deleteBtnHtml}
+                    <div class="review-card-top">
+                        <div class="review-user-info">
+                            <h5>${review.user_name}</h5>
+                            <span class="review-product-tag">${review.product_name}</span>
+                        </div>
+                        <div class="review-stars">
+                            ${starsHtml}
+                        </div>
+                    </div>
+                    <p class="review-comment">${review.comment}</p>
+                    <div class="review-date">${date}</div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Failed to load reviews:", err);
+        listContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 40px;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 32px; margin-bottom: 12px;"></i>
+            <p>เกิดข้อผิดพลาดในการโหลดข้อมูลรีวิว</p>
+        </div>`;
+    }
+}
+
+// Handle star rating interactive selection
+function initStarRatingSelection() {
+    const stars = document.querySelectorAll('#starRatingSelect i');
+    const input = document.getElementById('reviewRatingVal');
+    if (stars.length === 0 || !input) return;
+
+    stars.forEach(star => {
+        star.addEventListener('click', (e) => {
+            const rating = parseInt(e.target.getAttribute('data-rating'));
+            input.value = rating;
+            
+            // Set active class
+            stars.forEach((s, idx) => {
+                if (idx < rating) {
+                    s.classList.add('active');
+                    s.classList.replace('fa-regular', 'fa-solid');
+                } else {
+                    s.classList.remove('active');
+                    s.classList.replace('fa-solid', 'fa-regular');
+                }
+            });
+        });
+
+        // Hover effect helper
+        star.addEventListener('mouseover', (e) => {
+            const rating = parseInt(e.target.getAttribute('data-rating'));
+            stars.forEach((s, idx) => {
+                if (idx < rating) {
+                    s.style.color = 'var(--warning)';
+                } else {
+                    s.style.color = '#cbd5e1';
+                }
+            });
+        });
+
+        star.addEventListener('mouseout', () => {
+            const rating = parseInt(input.value);
+            stars.forEach((s, idx) => {
+                if (idx < rating) {
+                    s.style.color = '';
+                } else {
+                    s.style.color = '';
+                }
+            });
+        });
+    });
+}
+
+// Handle review form submit
+async function handleReviewSubmit(e) {
+    e.preventDefault();
+    if (!currentUser) {
+        window.showToast("กรุณาเข้าสู่ระบบก่อนรีวิวสินค้า!", "error");
+        return;
+    }
+
+    const rating = parseInt(document.getElementById('reviewRatingVal').value) || 5;
+    const productName = document.getElementById('reviewProduct').value;
+    const comment = document.getElementById('reviewComment').value.trim();
+
+    if (!productName) {
+        window.showToast("กรุณาเลือกรุ่นรองเท้าที่จะรีวิว!", "warning");
+        return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่งรีวิว...';
+
+    try {
+        const userName = currentUserProfile?.full_name || currentUser.email.split('@')[0];
+        
+        const { error } = await window.supabase
+            .from('reviews')
+            .insert([{
+                user_id: currentUser.id,
+                user_name: userName,
+                rating,
+                product_name: productName,
+                comment
+            }]);
+
+        if (error) throw error;
+
+        window.showToast("ส่งความคิดเห็นของคุณสำเร็จแล้ว ขอบพระคุณครับ!", "success");
+        
+        // Reset form
+        document.getElementById('reviewComment').value = '';
+        document.getElementById('reviewProduct').value = '';
+        document.getElementById('reviewRatingVal').value = '5';
+        
+        // Reset stars styling
+        const stars = document.querySelectorAll('#starRatingSelect i');
+        stars.forEach(s => {
+            s.classList.add('active');
+            s.classList.replace('fa-regular', 'fa-solid');
+        });
+
+        // Reload reviews
+        await loadReviews();
+
+    } catch (err) {
+        console.error("Failed to submit review:", err);
+        window.showToast(err.message || "ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", "error");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งความคิดเห็น';
+    }
+}
+
+// Admin delete review handler
+async function handleDeleteReview(reviewId) {
+    if (!confirm("คุณต้องการลบความคิดเห็นนี้ออกใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
+
+    try {
+        const { error } = await window.supabase
+            .from('reviews')
+            .delete()
+            .eq('id', reviewId);
+
+        if (error) throw error;
+
+        window.showToast("ลบความคิดเห็นเสร็จสิ้น!", "success");
+        await loadReviews();
+
+    } catch (err) {
+        console.error("Failed to delete review:", err);
+        window.showToast(err.message || "ไม่สามารถลบความคิดเห็นนี้ได้", "error");
+    }
+}
+
+window.handleDeleteReview = handleDeleteReview;

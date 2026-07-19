@@ -150,6 +150,87 @@
         </div>
     </section>
 
+    <!-- ================= CUSTOMER REVIEWS ================= -->
+    <section class="reviews-section" id="reviews">
+        <div class="container">
+            <div class="section-title">
+                <span>มุมมองจากลูกค้า</span>
+                <h2>รีวิวและความคิดเห็น</h2>
+                <p>ร่วมแบ่งปันความประทับใจและความคิดเห็นเกี่ยวกับสนีกเกอร์เพื่อช่วยพัฒนาบริการของเรา</p>
+            </div>
+            
+            <div class="reviews-layout">
+                <!-- Left: Reviews List -->
+                <div class="reviews-list-container">
+                    <div class="reviews-list-header">
+                        <h3>ความคิดเห็นจากผู้ซื้อล่าสุด</h3>
+                        <span class="avg-rating" id="reviewsAvg">5.0★</span>
+                    </div>
+                    
+                    <div class="review-cards-list" id="reviewsList">
+                        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; margin-bottom: 12px; color: var(--primary);"></i>
+                            <p>กำลังโหลดรีวิวจากลูกค้า...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Submit Review Form -->
+                <div class="reviews-form-container">
+                    <h3>เขียนรีวิวของคุณ</h3>
+                    
+                    <!-- Only visible if logged in -->
+                    <div id="reviewFormAuthWrapper">
+                        <form id="submitReviewForm">
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">ให้คะแนนความพึงพอใจ</label>
+                                <div class="star-rating-select" id="starRatingSelect">
+                                    <i class="fa-solid fa-star active" data-rating="1"></i>
+                                    <i class="fa-solid fa-star active" data-rating="2"></i>
+                                    <i class="fa-solid fa-star active" data-rating="3"></i>
+                                    <i class="fa-solid fa-star active" data-rating="4"></i>
+                                    <i class="fa-solid fa-star active" data-rating="5"></i>
+                                </div>
+                                <input type="hidden" id="reviewRatingVal" value="5" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="reviewProduct" style="display: block; margin-bottom: 8px; font-weight: 600;">เลือกรุ่นรองเท้าที่ต้องการรีวิว</label>
+                                <select id="reviewProduct" required style="width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); outline: none; background: #fff; font-family: inherit; font-weight: 500;">
+                                    <option value="" disabled selected>-- เลือกรุ่นรองเท้า --</option>
+                                    <option value="Jordan One Premium">Jordan One Premium</option>
+                                    <option value="Air Force Retro">Air Force Retro</option>
+                                    <option value="Pegasus Runner 41">Pegasus Runner 41</option>
+                                    <option value="Vomero cushion 18">Vomero cushion 18</option>
+                                    <option value="Classic Dunk Low">Classic Dunk Low</option>
+                                    <option value="Invincible ZoomX">Invincible ZoomX</option>
+                                    <option value="Workout Zoom Pro">Workout Zoom Pro</option>
+                                    <option value="Air Max Pulse">Air Max Pulse</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reviewComment" style="display: block; margin-bottom: 8px; font-weight: 600;">ข้อความรีวิวและความรู้สึก</label>
+                                <textarea id="reviewComment" required rows="4" placeholder="แบ่งปันความคิดเห็นหรือความพึงพอใจต่อรองเท้าคู่นี้..." style="width: 100%; padding: 14px; border-radius: var(--radius); border: 1px solid var(--border); outline: none; resize: vertical; font-family: inherit;"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">
+                                <i class="fa-solid fa-paper-plane"></i> ส่งความคิดเห็น
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Shown if NOT logged in -->
+                    <div id="reviewFormNoAuthWrapper" style="display: none; text-align: center; padding: 20px 0;">
+                        <i class="fa-solid fa-user-lock" style="font-size: 36px; color: var(--text-muted); margin-bottom: 12px;"></i>
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">กรุณาเข้าสู่ระบบสมาชิกเพื่อเขียนรีวิวและแสดงความคิดเห็น</p>
+                        <a href="auth.html" class="btn" style="display: inline-block; padding: 10px 24px; font-size: 14px;">เข้าสู่ระบบสมาชิก</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ================= PROMOTION ================= -->
     <section class="promo-banner">
         <div class="container">
