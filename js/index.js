@@ -220,14 +220,16 @@ async function loadReviews() {
 
             return `
                 <div class="review-card-item">
-                    ${deleteBtnHtml}
                     <div class="review-card-top">
                         <div class="review-user-info">
                             <h5>${review.user_name}</h5>
                             <span class="review-product-tag">${review.product_name}</span>
                         </div>
-                        <div class="review-stars">
-                            ${starsHtml}
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="review-stars">
+                                ${starsHtml}
+                            </div>
+                            ${deleteBtnHtml}
                         </div>
                     </div>
                     <p class="review-comment">${review.comment}</p>
