@@ -1,0 +1,160 @@
+// ================= MEMBER PROFILE & ORDER HISTORY LOGIC =================
+
+async function loadUserProfileAndOrders() {
+    const nameEl = document.getElementById('profileName');
+    const emailEl = document.getElementById('profileEmail');
+    const avatarEl = document.getElementById('profileAvatar');
+    const ordersContainer = document.getElementById('ordersList');
+
+    // 1. Check user session
+    const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
+    if (sessionError || !session) {
+        window.showToast("กรุณาเข้าสู่ระบบเพื่อเข้าชมหน้าโปรไฟล์!", "error");
+        setTimeout(() => {
+            window.location.href = "auth.html";
+        }, 1000);
+        return;
+    }
+
+    const user = session.user;
+    
+    // 2. Fetch User Profile role/name
+    const { data: profile, error: profileError } = await window.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (!profileError && profile) {
+        if (nameEl) nameEl.textContent = profile.full_name || "คนรักสนีกเกอร์";
+        if (emailEl) emailEl.textContent = profile.email || user.email;
+        if (avatarEl) {
+            avatarEl.textContent = (profile.full_name || user.email).charAt(0).toUpperCase();
+        }
+    } else {
+        if (nameEl) nameEl.textContent = "คนรักสนีกเกอร์";
+        if (emailEl) emailEl.textContent = user.email;
+    }
+
+    // 3. Fetch Orders history (nested items + product details)
+    try {
+        const { data: orders, error: ordersError } = await window.supabase
+            .from('orders')
+            .select(`
+                id,
+                total,
+                status,
+                created_at,
+                shipping_address,
+                phone,
+                order_items (
+                    id,
+                    quantity,
+                    price,
+                    products (
+                        id,
+                        name,
+                        image_url
+                    )
+                )
+            `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (ordersError) throw ordersError;
+
+        if (!ordersContainer) return;
+
+        if (orders.length === 0) {
+            ordersContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-solid fa-receipt" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <h3>ยังไม่มีประวัติการสั่งซื้อของคุณ</h3>
+                <p>คุณยังไม่ได้เลือกซื้อและสั่งซื้อรองเท้าจากร้านค้าของเราเลย</p>
+            </div>`;
+            return;
+        }
+
+        ordersContainer.innerHTML = orders.map(order => {
+            const date = new Date(order.created_at).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Status Badge
+            const statusClass = order.status.toLowerCase();
+            let statusLabel = 'รอดำเนินการ';
+            if (order.status === 'shipped') statusLabel = 'จัดส่งแล้ว';
+            else if (order.status === 'delivered') statusLabel = 'จัดส่งสำเร็จ';
+            else if (order.status === 'cancelled') statusLabel = 'ยกเลิกแล้ว';
+
+            // Items HTML
+            const itemsHtml = order.order_items.map(item => {
+                const product = item.products || { name: 'สนีกเกอร์ที่ถูกลบออกจากระบบ', image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600' };
+                return `
+                    <div class="order-item-summary">
+                        <div class="order-item-summary-left">
+                            <img src="${product.image_url}" alt="${product.name}">
+                            <div>
+                                <span class="item-name">${product.name}</span>
+                                <div class="item-meta">จำนวน: ${item.quantity} | ราคาต่อชิ้น: ฿${item.price.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="order-history-card">
+                    <div class="order-header">
+                        <div class="order-header-info">
+                            <h4>รหัสออเดอร์: #${order.id.substring(0, 8)}...</h4>
+                            <p><i class="fa-regular fa-calendar"></i> สั่งซื้อเมื่อ: ${date} น.</p>
+                        </div>
+                        <span class="order-status ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="order-items-list">
+                        ${itemsHtml}
+                    </div>
+                    <div class="order-total-row">
+                        <span>ยอดชำระเงินปลายทางทั้งหมด:</span>
+                        <span class="total-val">฿${order.total.toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Failed to load orders history:", err);
+        if (ordersContainer) {
+            ordersContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 40px;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 32px; margin-bottom: 12px;"></i>
+                <p>เกิดข้อขัดข้องในการโหลดประวัติสั่งซื้อของคุณ กรุณาลองโหลดใหม่อีกครั้ง</p>
+            </div>`;
+        }
+    }
+}
+
+// Sidebar logout click
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('ordersList')) {
+        loadUserProfileAndOrders();
+    }
+
+    const sidebarLogout = document.getElementById('profileLogoutBtn');
+    if (sidebarLogout) {
+        sidebarLogout.addEventListener('click', async () => {
+            const { error } = await window.supabase.auth.signOut();
+            if (error) {
+                window.showToast("ออกจากระบบไม่สำเร็จ", "error");
+            } else {
+                window.showToast("ออกจากระบบเสร็จเรียบร้อยแล้ว!", "success");
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 1000);
+            }
+        });
+    }
+});

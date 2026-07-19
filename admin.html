@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบหลังบ้านแอดมิน | ShoeShop</title>
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body, button, input, select, textarea {
+            font-family: 'Poppins', 'Sarabun', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- ================= HEADER ================= -->
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo">
+                    <a href="index.html">Shoe<span>Shop</span></a>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">หน้าแรก</a></li>
+                    <li><a href="products.html">ร้านค้า</a></li>
+                    <li><a href="index.html#collection">คอลเลกชัน</a></li>
+                    <li><a href="profile.html">คำสั่งซื้อของฉัน</a></li>
+                    <li class="admin-only"><a href="admin.html" class="active" style="color: var(--primary); font-weight: 700;">ระบบแอดมิน</a></li>
+                </ul>
+                <div class="nav-icons">
+                    <a href="products.html"><i class="fa-solid fa-magnifying-glass"></i></a>
+                    <a href="cart.html" class="cart-btn">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                    <a href="profile.html" id="userProfileBtn"><i class="fa-regular fa-user"></i></a>
+                    <span id="navUserEmail" style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: none;"></span>
+                    <button id="logoutBtn" style="display: none; font-size: 18px; color: var(--danger); width: auto; height: auto; background: none; border: none; cursor: pointer;" title="ออกจากระบบ">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+                <div class="menu-toggle" id="mobileMenuBtn">
+                    <i class="fa-solid fa-bars"></i>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ================= ADMIN SECTION ================= -->
+    <section class="admin-section">
+        <div class="container">
+            <!-- Access Denied Banner -->
+            <div id="adminAccessDenied" style="display: none; text-align: center; padding: 100px 0;">
+                <i class="fa-solid fa-shield-halved" style="font-size: 80px; color: var(--danger); margin-bottom: 24px;"></i>
+                <h2>ปฏิเสธการเข้าถึง</h2>
+                <p style="color: var(--text-muted); margin-bottom: 30px;">คุณไม่มีสิทธิ์ระดับผู้ดูแลระบบ (Admin) ในการเข้าถึงพื้นที่การจัดการส่วนนี้</p>
+                <a href="index.html" class="btn">กลับสู่หน้าหลัก</a>
+            </div>
+
+            <!-- Admin Layout -->
+            <div class="admin-layout" id="adminDashboardLayout" style="display: none;">
+                <!-- Sidebar tabs -->
+                <aside class="admin-sidebar">
+                    <h3 style="font-size: 16px; margin-bottom: 20px; color: var(--text-light); text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--border-dark); padding-bottom: 10px;">ระบบควบคุมแอดมิน</h3>
+                    <div class="admin-sidebar-menu">
+                        <div class="admin-menu-item active" id="tabProductsBtn">
+                            <i class="fa-solid fa-boxes-stacked"></i> จัดการคลังสินค้า
+                        </div>
+                        <div class="admin-menu-item" id="tabOrdersBtn">
+                            <i class="fa-solid fa-receipt"></i> จัดการคำสั่งซื้อลูกค้า
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Content Area -->
+                <main class="admin-content-area">
+                    <!-- Products Tab -->
+                    <div id="tabProductsContent" class="admin-tab-content">
+                        <div class="admin-header-row">
+                            <h2>ระบบจัดการรายการสินค้าและสต็อก</h2>
+                            <button class="btn" id="openAddProductModalBtn">
+                                <i class="fa-solid fa-plus"></i> เพิ่มสินค้าใหม่
+                            </button>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>รูปภาพ</th>
+                                        <th>ชื่อรองเท้า</th>
+                                        <th>หมวดหมู่</th>
+                                        <th>ราคาจำหน่าย</th>
+                                        <th>สต็อกคงเหลือ</th>
+                                        <th>การจัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminProductsTableBody">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Orders Tab -->
+                    <div id="tabOrdersContent" class="admin-tab-content" style="display: none;">
+                        <div class="admin-header-row">
+                            <h2>รายการคำสั่งซื้อของลูกค้าทั้งหมด</h2>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>วันเวลา / เลขออเดอร์</th>
+                                        <th>ข้อมูลลูกค้า</th>
+                                        <th>ที่อยู่จัดส่งและเบอร์โทร</th>
+                                        <th>ยอดชำระทั้งหมด</th>
+                                        <th>สถานะออเดอร์</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminOrdersTableBody">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= ADD PRODUCT MODAL ================= -->
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAddProductModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">เพิ่มข้อมูลสินค้าคู่ใหม่</h3>
+            <form id="addProductForm">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="newProdName">ชื่อรองเท้าสนีกเกอร์</label>
+                    <input type="text" id="newProdName" required placeholder="เช่น Jordan One Retro High">
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="newProdCategory">หมวดหมู่รองเท้า</label>
+                    <select id="newProdCategory" required>
+                        <option value="Running">Running (วิ่ง)</option>
+                        <option value="Basketball">Basketball (บาสเกตบอล)</option>
+                        <option value="Lifestyle">Lifestyle (ไลฟ์สไตล์)</option>
+                        <option value="Training">Training (ออกกำลังกาย)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="newProdPrice">ราคาขาย (฿)</label>
+                    <input type="number" id="newProdPrice" min="0" required placeholder="เช่น 4500">
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="newProdStock">จำนวนสต็อกรองเท้า (ชิ้น)</label>
+                    <input type="number" id="newProdStock" min="0" required placeholder="เช่น 10">
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="newProdImage">ลิงก์ที่อยู่อัปโหลดรูปภาพ (URL)</label>
+                    <input type="url" id="newProdImage" required placeholder="https://unsplash.com/...">
+                </div>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="newProdDesc">คำอธิบายรายละเอียดรองเท้า</label>
+                    <textarea id="newProdDesc" rows="3" placeholder="ระบุเทคโนโลยี วัสดุ และคุณสมบัติของรองเท้า..."></textarea>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">ยืนยันการเพิ่มสินค้า</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= EDIT PRODUCT MODAL ================= -->
+    <div class="modal" id="editProductModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeEditProductModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">แก้ไขรายละเอียดสินค้า</h3>
+            <form id="editProductForm">
+                <input type="hidden" id="editProdId">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="editProdName">ชื่อรองเท้าสนีกเกอร์</label>
+                    <input type="text" id="editProdName" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="editProdCategory">หมวดหมู่รองเท้า</label>
+                    <select id="editProdCategory" required>
+                        <option value="Running">Running (วิ่ง)</option>
+                        <option value="Basketball">Basketball (บาสเกตบอล)</option>
+                        <option value="Lifestyle">Lifestyle (ไลฟ์สไตล์)</option>
+                        <option value="Training">Training (ออกกำลังกาย)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="editProdPrice">ราคาขาย (฿)</label>
+                    <input type="number" id="editProdPrice" min="0" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="editProdStock">จำนวนสต็อกรองเท้า (ชิ้น)</label>
+                    <input type="number" id="editProdStock" min="0" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="editProdImage">ลิงก์ที่อยู่อัปโหลดรูปภาพ (URL)</label>
+                    <input type="url" id="editProdImage" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="editProdDesc">คำอธิบายรายละเอียดรองเท้า</label>
+                    <textarea id="editProdDesc" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">บันทึกการแก้ไขข้อมูล</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>Shoe<span>Shop</span></h3>
+                    <p>สนีกเกอร์ระดับพรีเมียมที่ออกแบบมาเพื่อความสบายในทุกวัน สไตล์สปอร์ต และแฟชั่นแนวสตรีท</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                        <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>ช้อปสินค้า</h4>
+                    <ul class="footer-links">
+                        <li><a href="products.html">สนีกเกอร์ทั้งหมด</a></li>
+                        <li><a href="products.html?category=Running">รองเท้าวิ่ง</a></li>
+                        <li><a href="products.html?category=Basketball">บาสเกตบอล</a></li>
+                        <li><a href="products.html?category=Lifestyle">ไลฟ์สไตล์</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>บริษัท</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">เกี่ยวกับเรา</a></li>
+                        <li><a href="#">ร่วมงานกับเรา</a></li>
+                        <li><a href="#">ข่าวสารประชาสัมพันธ์</a></li>
+                        <li><a href="#">บล็อก</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>ช่วยเหลือ</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">ติดต่อเรา</a></li>
+                        <li><a href="#">ข้อมูลการจัดส่ง</a></li>
+                        <li><a href="#">การรับประกันสินค้า</a></li>
+                        <li><a href="#">คำถามที่พบบ่อย (FAQ)</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ShoeShop. สงวนลิขสิทธิ์ทั้งหมด.</p>
+                <p>ออกแบบด้วยความ <i class="fa-solid fa-heart" style="color: var(--primary);"></i> เพื่อคนรักสนีกเกอร์</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Supabase and Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
