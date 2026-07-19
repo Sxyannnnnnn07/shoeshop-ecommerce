@@ -95,22 +95,22 @@ async function loadShopStats() {
             if (statCustomers) statCustomers.textContent = `${data.profiles_count || 0}+`;
             if (statRating) statRating.textContent = `5.0★`;
         } else {
-            // Fallback: Query public products table count
-            const { count: prodCount, error: prodErr } = await window.supabase
+            // Fallback: Query public products table count safely
+            const { data: prodData, error: prodErr } = await window.supabase
                 .from('products')
-                .select('*', { count: 'exact', head: true });
+                .select('id');
             
-            if (!prodErr && prodCount !== null && statProducts) {
-                statProducts.textContent = `${prodCount}`;
+            if (!prodErr && prodData && statProducts) {
+                statProducts.textContent = `${prodData.length}`;
             }
 
-            // Fallback for profiles (might return 0/error due to RLS, default to 3 if so)
-            const { count: profCount, error: profErr } = await window.supabase
+            // Fallback for profiles (might return error/empty due to RLS, default to 3 if so)
+            const { data: profData, error: profErr } = await window.supabase
                 .from('profiles')
-                .select('*', { count: 'exact', head: true });
+                .select('id');
             
-            if (!profErr && profCount !== null && statCustomers) {
-                statCustomers.textContent = `${profCount}+`;
+            if (!profErr && profData && statCustomers) {
+                statCustomers.textContent = `${profData.length}+`;
             } else if (statCustomers) {
                 statCustomers.textContent = `3+`; // Default mock data if RLS restricts
             }
