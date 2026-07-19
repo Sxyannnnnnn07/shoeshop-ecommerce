@@ -589,7 +589,6 @@ input, select, textarea {
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1556906781-9a412961c28c?w=1600&auto=format&fit=crop&q=80');
     background-size: cover;
     background-position: center;
-    background-attachment: fixed;
     background-repeat: no-repeat;
     color: var(--text-light);
     text-align: center;
