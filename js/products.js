@@ -189,7 +189,7 @@ async function fetchProductDetail(id) {
             return;
         }
 
-        document.title = `${product.name} | ShoeShop`;
+        document.title = `${product.name} | jehha-sneaker`;
 
         const isOutOfStock = product.stock <= 0;
         const stockStatusClass = isOutOfStock ? 'out-of-stock' : product.stock <= 3 ? 'low-stock' : 'in-stock';
