@@ -150,8 +150,8 @@ function updateHeaderNav(user, profile) {
             logoutBtn.style.display = 'inline-block';
         }
         
-        // Show admin menu item if role is admin
-        if (profile && profile.role === 'admin') {
+        // Show admin menu item if role is admin and email is admin@test.com
+        if (profile && profile.role === 'admin' && user.email === 'admin@test.com') {
             adminMenu.forEach(el => el.style.display = 'block');
         } else {
             adminMenu.forEach(el => el.style.display = 'none');

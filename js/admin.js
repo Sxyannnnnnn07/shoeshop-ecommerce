@@ -28,10 +28,10 @@ async function initAdminDashboard() {
         .eq('id', user.id)
         .single();
 
-    if (profileError || !profile || profile.role !== 'admin') {
+    if (profileError || !profile || profile.role !== 'admin' || user.email !== 'admin@test.com') {
         if (deniedBanner) deniedBanner.style.display = 'block';
         if (layout) layout.style.display = 'none';
-        window.showToast("ไม่มีสิทธิ์เข้าถึง! เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น", "error");
+        window.showToast("ไม่มีสิทธิ์เข้าถึง! เฉพาะแอดมินสูงสุดเท่านั้น", "error");
     } else {
         if (layout) layout.style.display = 'grid';
         if (deniedBanner) deniedBanner.style.display = 'none';

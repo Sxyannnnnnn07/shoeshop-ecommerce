@@ -209,7 +209,7 @@ async function loadReviews() {
         if (avgEl) avgEl.textContent = `${avgRating}★`;
 
         // Check if current user is admin to show delete buttons
-        const isAdmin = currentUserProfile?.role === 'admin';
+        const isAdmin = currentUserProfile?.role === 'admin' && currentUser?.email === 'admin@test.com';
 
         listContainer.innerHTML = reviews.map(review => {
             const date = new Date(review.created_at).toLocaleDateString('th-TH', {
