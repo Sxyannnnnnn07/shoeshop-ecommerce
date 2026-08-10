@@ -50,7 +50,21 @@ function updateCartBadge() {
     const count = cart.reduce((total, item) => total + item.quantity, 0);
     const badge = document.getElementById('cartCount');
     if (badge) {
+        const oldCount = parseInt(badge.textContent) || 0;
         badge.textContent = count;
+        
+        if (count > oldCount) {
+            const cartBtn = document.querySelector('.cart-btn');
+            if (cartBtn) {
+                cartBtn.classList.remove('wiggle');
+                void cartBtn.offsetWidth; // Force DOM reflow to restart keyframe animation
+                cartBtn.classList.add('wiggle');
+                
+                setTimeout(() => {
+                    cartBtn.classList.remove('wiggle');
+                }, 600);
+            }
+        }
     }
 }
 
@@ -211,6 +225,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
     checkUserSession();
     initMobileMenu();
+    
+    // Initialize premium animations and tools
+    initBackToTop();
+    initScrollAnimations();
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -226,3 +244,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ================= BACK TO TOP BUTTON =================
+function initBackToTop() {
+    const btn = document.createElement('div');
+    btn.id = 'backToTop';
+    btn.className = 'back-to-top';
+    btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+    document.body.appendChild(btn);
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+            btn.classList.add('show');
+        } else {
+            btn.classList.remove('show');
+        }
+    });
+
+    btn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
+
+// ================= SCROLL ENTRANCE ANIMATIONS =================
+function initScrollAnimations() {
+    // Select sections and cards to fade in
+    const selector = 'section, .product-card, .feature-card, .category-card, .promo-content, .reviews-list-container, .reviews-form-container';
+    const elements = document.querySelectorAll(selector);
+
+    if (elements.length === 0) return;
+
+    const observerOptions = {
+        root: null,
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    elements.forEach(el => {
+        el.classList.add('fade-up-element');
+        observer.observe(el);
+    });
+}

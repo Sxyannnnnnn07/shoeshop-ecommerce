@@ -229,12 +229,23 @@ async function loadReviews() {
                    </button>`
                 : '';
 
+            // Generate avatar initials and hashed background color
+            const initial = (review.user_name || '?').charAt(0).toUpperCase();
+            const avatarColors = ['#ff7849', '#ff5a1f', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
+            const charCodeSum = (review.user_name || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+            const bgColor = avatarColors[charCodeSum % avatarColors.length];
+
             return `
                 <div class="review-card-item">
                     <div class="review-card-top">
-                        <div class="review-user-info">
-                            <h5>${review.user_name}</h5>
-                            <span class="review-product-tag">${review.product_name}</span>
+                        <div class="review-user-info-wrapper">
+                            <div class="review-avatar" style="background-color: ${bgColor};">
+                                ${initial}
+                            </div>
+                            <div class="review-user-info">
+                                <h5>${review.user_name}</h5>
+                                <span class="review-product-tag">${review.product_name}</span>
+                            </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div class="review-stars">
@@ -243,7 +254,7 @@ async function loadReviews() {
                             ${deleteBtnHtml}
                         </div>
                     </div>
-                    <p class="review-comment">${review.comment}</p>
+                    <p class="review-comment" style="margin-left: 62px; margin-top: 10px;">${review.comment}</p>
                     <div class="review-date">${date}</div>
                 </div>
             `;
