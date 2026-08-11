@@ -32,19 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังเข้าสู่ระบบ...';
 
-            // ===== BYPASS: admin@test.com ล็อกอินโดยตรงโดยไม่ผ่าน Supabase =====
-            if (email === 'admin@test.com') {
-                window.setMockAdminSession();
-                window.showToast("เข้าสู่ระบบแอดมินเรียบร้อยแล้ว!", "success");
-                setTimeout(() => {
-                    const params = new URLSearchParams(window.location.search);
-                    const redirect = params.get('redirect');
-                    window.location.href = redirect || "index.html";
-                }, 1000);
-                return;
-            }
-            // ===== END BYPASS =====
-
             try {
                 const { data, error } = await window.supabase.auth.signInWithPassword({
                     email,

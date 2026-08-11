@@ -8,17 +8,6 @@ async function initAdminDashboard() {
     const layout = document.getElementById('adminDashboardLayout');
     const deniedBanner = document.getElementById('adminAccessDenied');
 
-    // ===== BYPASS: ตรวจสอบ mock admin session ก่อน =====
-    const mockSession = window.getMockAdminSession();
-    if (mockSession && mockSession.user.email === 'admin@test.com') {
-        if (layout) layout.style.display = 'grid';
-        if (deniedBanner) deniedBanner.style.display = 'none';
-        loadAdminProducts();
-        loadAdminOrders();
-        return;
-    }
-    // ===== END BYPASS =====
-
     const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
     
     if (sessionError || !session) {
