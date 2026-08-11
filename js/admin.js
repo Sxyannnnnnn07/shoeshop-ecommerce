@@ -85,9 +85,17 @@ function initAdminModals() {
         closeEditBtn.addEventListener('click', () => editModal.classList.remove('active'));
     }
 
+    const slipModal = document.getElementById('viewSlipModal');
+    const closeSlipBtn = document.getElementById('closeSlipModalBtn');
+    
+    if (closeSlipBtn && slipModal) {
+        closeSlipBtn.addEventListener('click', () => slipModal.classList.remove('active'));
+    }
+
     window.addEventListener('click', (e) => {
         if (e.target === addModal) addModal.classList.remove('active');
         if (e.target === editModal) editModal.classList.remove('active');
+        if (e.target === slipModal) slipModal.classList.remove('active');
     });
 }
 
@@ -292,7 +300,41 @@ async function loadAdminOrders() {
 
             const customerName = order.profiles?.full_name || 'ลูกค้าทั่วไป';
             const customerEmail = order.profiles?.email || 'ไม่มีอีเมล';
-            const addressFormatted = order.shipping_address.replace(/\n/g, ', ');
+            
+            let addressText = order.shipping_address;
+            let paymentMethodText = "ชำระเงินปลายทาง (COD)";
+            let slipBtnHtml = "";
+            let acceptBtnHtml = "";
+
+            try {
+                if (order.shipping_address && order.shipping_address.startsWith('{')) {
+                    const meta = JSON.parse(order.shipping_address);
+                    addressText = `${meta.fullName}\n${meta.address}`;
+                    if (meta.payment_method === 'TRANSFER') {
+                        paymentMethodText = "โอนเงินผ่านธนาคาร";
+                        if (meta.slip) {
+                            slipBtnHtml = `
+                                <button onclick="viewPaymentSlip('${meta.slip}')" class="btn" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; background-color: var(--primary); color: white; display: inline-flex; align-items: center; gap: 4px; border: none; font-weight: 600; border-radius: 4px; cursor: pointer;">
+                                    <i class="fa-solid fa-receipt"></i> ดูสลิปโอนเงิน
+                                </button>
+                            `;
+                        } else {
+                            slipBtnHtml = `<span style="color: var(--danger); font-size: 11px; display: block; margin-top: 5px; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> ไม่มีสลิปแนบ</span>`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error parsing order shipping address:", e);
+            }
+            const addressFormatted = addressText.replace(/\n/g, ', ');
+
+            if (order.status === 'pending') {
+                acceptBtnHtml = `
+                    <button onclick="approveOrder('${order.id}')" class="btn" style="font-size: 11px; padding: 6px 8px; margin-top: 6px; background-color: #10b981; width: 100%; border: none; font-weight: 700; color: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.2s;">
+                        <i class="fa-solid fa-circle-check"></i> ยอมรับคำสั่งซื้อ
+                    </button>
+                `;
+            }
 
             const itemsSummary = order.order_items.map(item => {
                 const name = item.products?.name || 'ลบออกจากระบบ';
@@ -312,7 +354,11 @@ async function loadAdminOrders() {
                     <td>
                         <div style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${addressFormatted}">${addressFormatted}</div>
                         <div style="font-size: 11px; color: var(--text-muted);">เบอร์ติดต่อ: ${order.phone}</div>
-                        <div style="font-size: 11px; color: var(--primary); font-weight: 600;">สินค้า: ${itemsSummary}</div>
+                        <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-bottom: 4px;">สินค้า: ${itemsSummary}</div>
+                        <div style="font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <span>ชำระเงิน: ${paymentMethodText}</span>
+                            ${slipBtnHtml}
+                        </div>
                     </td>
                     <td style="font-weight: 800; color: var(--primary);">฿${order.total.toLocaleString()}</td>
                     <td>
@@ -322,6 +368,7 @@ async function loadAdminOrders() {
                             <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>ได้รับของแล้ว (Delivered)</option>
                             <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>ยกเลิกออเดอร์ (Cancelled)</option>
                         </select>
+                        ${acceptBtnHtml}
                     </td>
                 </tr>
             `;
@@ -352,6 +399,23 @@ async function updateOrderStatus(orderId, newStatus) {
     }
 }
 
+function viewPaymentSlip(base64Image) {
+    const modal = document.getElementById('viewSlipModal');
+    const img = document.getElementById('slipImagePreview');
+    if (modal && img) {
+        img.src = base64Image;
+        modal.classList.add('active');
+    }
+}
+
+async function approveOrder(orderId) {
+    if (confirm("คุณต้องการกดยอมรับคำสั่งซื้อนี้และเปลี่ยนสถานะเป็น 'จัดส่งแล้ว (Shipped)' ใช่หรือไม่?")) {
+        await window.updateOrderStatus(orderId, 'shipped');
+    }
+}
+
+window.viewPaymentSlip = viewPaymentSlip;
+window.approveOrder = approveOrder;
 window.openEditProduct = openEditProduct;
 window.deleteProduct = deleteProduct;
 window.updateOrderStatus = updateOrderStatus;

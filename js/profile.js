@@ -106,6 +106,33 @@ async function loadUserProfileAndOrders() {
                 `;
             }).join('');
 
+            let paymentMethodLabel = "ยอดชำระเงินปลายทางทั้งหมด:";
+            let slipStatusHtml = "";
+
+            try {
+                if (order.shipping_address && order.shipping_address.startsWith('{')) {
+                    const meta = JSON.parse(order.shipping_address);
+                    if (meta.payment_method === 'TRANSFER') {
+                        paymentMethodLabel = "ยอดชำระผ่านธนาคารทั้งหมด:";
+                        if (meta.slip) {
+                            slipStatusHtml = `
+                                <div style="font-size: 12px; color: #10b981; margin-top: 4px; font-weight: 600;">
+                                    <i class="fa-solid fa-circle-check"></i> แนบหลักฐานการโอนเงินแล้ว
+                                </div>
+                            `;
+                        } else {
+                            slipStatusHtml = `
+                                <div style="font-size: 12px; color: var(--danger); margin-top: 4px; font-weight: 600;">
+                                    <i class="fa-solid fa-circle-xmark"></i> ยังไม่ได้แนบหลักฐานการโอนเงิน
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error parsing order shipping address:", e);
+            }
+
             return `
                 <div class="order-history-card">
                     <div class="order-header">
@@ -118,9 +145,12 @@ async function loadUserProfileAndOrders() {
                     <div class="order-items-list">
                         ${itemsHtml}
                     </div>
-                    <div class="order-total-row">
-                        <span>ยอดชำระเงินปลายทางทั้งหมด:</span>
-                        <span class="total-val">฿${order.total.toLocaleString()}</span>
+                    <div class="order-total-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <span style="font-weight: 600;">${paymentMethodLabel}</span>
+                            ${slipStatusHtml}
+                        </div>
+                        <span class="total-val" style="font-size: 18px; font-weight: 800; color: var(--primary);">฿${order.total.toLocaleString()}</span>
                     </div>
                 </div>
             `;

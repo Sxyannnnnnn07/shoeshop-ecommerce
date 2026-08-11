@@ -1,5 +1,48 @@
 // ================= CART & CHECKOUT PAGE LOGIC =================
 
+// Utility function to compress uploaded slip image
+function compressImage(file, maxWidth, maxHeight, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compress as JPEG
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedBase64);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
+// Global variable to store uploaded slip base64
+let uploadedSlipBase64 = null;
+
 // Render cart contents on cart.html
 function renderCartPage() {
     const itemsContainer = document.getElementById('cartItemsList');
@@ -135,7 +178,7 @@ function renderCheckoutSummary() {
     document.getElementById('totalVal').textContent = `฿${subtotal.toLocaleString()}`;
 }
 
-// Handle Order Submission (COD checkout)
+// Handle Order Submission (COD & Transfer checkout)
 async function handleCheckoutSubmit(e) {
     e.preventDefault();
 
@@ -160,15 +203,36 @@ async function handleCheckoutSubmit(e) {
     if (cart.length === 0) {
         window.showToast("ตะกร้าสินค้าของคุณว่างเปล่า!", "error");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (ชำระเงินปลายทาง)';
+        const currentMethod = document.getElementById('paymentMethod').value;
+        if (currentMethod === 'TRANSFER') {
+            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (แนบสลิปโอนเงิน)';
+        } else {
+            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (ชำระเงินปลายทาง)';
+        }
         return;
     }
 
-    // 2. Shipping inputs
+    // 2. Shipping inputs & payment options
     const fullName = document.getElementById('fullName').value.trim();
     const phone = document.getElementById('phone').value.trim();
     const address = document.getElementById('address').value.trim();
-    const fullShippingInfo = `${fullName}\n${address}`;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+
+    if (paymentMethod === 'TRANSFER' && !uploadedSlipBase64) {
+        window.showToast("กรุณาแนบภาพสลิปโอนเงินก่อนทำการสั่งซื้อ!", "error");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (แนบสลิปโอนเงิน)';
+        return;
+    }
+
+    // Serialize payment details and address into shipping_address column as JSON
+    const orderMetadata = {
+        fullName: fullName,
+        address: address,
+        payment_method: paymentMethod,
+        slip: paymentMethod === 'TRANSFER' ? uploadedSlipBase64 : null
+    };
+    const fullShippingInfo = JSON.stringify(orderMetadata);
 
     // 3. Prepare parameters for RPC transaction place_order
     const itemsParam = cart.map(item => ({
@@ -213,7 +277,11 @@ async function handleCheckoutSubmit(e) {
         window.showToast(userMsg, "error");
         
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (ชำระเงินปลายทาง)';
+        if (paymentMethod === 'TRANSFER') {
+            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (แนบสลิปโอนเงิน)';
+        } else {
+            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (ชำระเงินปลายทาง)';
+        }
     }
 }
 
@@ -252,6 +320,76 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkoutForm = document.getElementById('checkoutForm');
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', handleCheckoutSubmit);
+        }
+
+        // Setup Payment Method Toggle & Slip Upload Preview
+        const paymentMethodSelect = document.getElementById('paymentMethod');
+        const bankTransferDetails = document.getElementById('bankTransferDetails');
+        const submitOrderBtn = document.getElementById('submitOrderBtn');
+        const paymentSlipInput = document.getElementById('paymentSlip');
+        const paymentSlipFileName = document.getElementById('paymentSlipFileName');
+        const slipPreviewContainer = document.getElementById('slipPreviewContainer');
+        const slipImagePreview = document.getElementById('slipImagePreview');
+
+        if (paymentMethodSelect && bankTransferDetails) {
+            paymentMethodSelect.addEventListener('change', () => {
+                if (paymentMethodSelect.value === 'TRANSFER') {
+                    bankTransferDetails.style.display = 'block';
+                    if (paymentSlipInput) paymentSlipInput.required = true;
+                    if (submitOrderBtn) {
+                        submitOrderBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (แนบสลิปโอนเงิน)';
+                    }
+                } else {
+                    bankTransferDetails.style.display = 'none';
+                    if (paymentSlipInput) paymentSlipInput.required = false;
+                    if (submitOrderBtn) {
+                        submitOrderBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (ชำระเงินปลายทาง)';
+                    }
+                }
+            });
+        }
+
+        if (paymentSlipInput) {
+            paymentSlipInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    paymentSlipFileName.textContent = file.name;
+                    try {
+                        // Show loading status
+                        if (submitOrderBtn) {
+                            submitOrderBtn.disabled = true;
+                            submitOrderBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังโหลดและบีบอัดรูปภาพ...';
+                        }
+
+                        // Compress image to keep DB record small
+                        uploadedSlipBase64 = await compressImage(file, 600, 800, 0.6);
+
+                        if (slipImagePreview && slipPreviewContainer) {
+                            slipImagePreview.src = uploadedSlipBase64;
+                            slipPreviewContainer.style.display = 'block';
+                        }
+                    } catch (err) {
+                        console.error("Failed to read/compress slip image:", err);
+                        window.showToast("เกิดข้อผิดพลาดในการโหลดรูปภาพสลิป", "error");
+                        paymentSlipFileName.textContent = "ยังไม่ได้เลือกไฟล์";
+                        uploadedSlipBase64 = null;
+                        if (slipPreviewContainer) slipPreviewContainer.style.display = 'none';
+                    } finally {
+                        if (submitOrderBtn) {
+                            submitOrderBtn.disabled = false;
+                            if (paymentMethodSelect.value === 'TRANSFER') {
+                                submitOrderBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (แนบสลิปโอนเงิน)';
+                            } else {
+                                submitOrderBtn.innerHTML = '<i class="fa-solid fa-lock"></i> ยืนยันการสั่งซื้อสินค้า (ชำระเงินปลายทาง)';
+                            }
+                        }
+                    }
+                } else {
+                    paymentSlipFileName.textContent = "ยังไม่ได้เลือกไฟล์";
+                    uploadedSlipBase64 = null;
+                    if (slipPreviewContainer) slipPreviewContainer.style.display = 'none';
+                }
+            });
         }
     }
 });
