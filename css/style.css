@@ -1201,6 +1201,7 @@ input, select, textarea {
     border-bottom: 1px solid var(--border);
     font-weight: 700;
     color: var(--text-muted);
+    column-gap: 24px;
 }
 
 .cart-item-row {
@@ -1209,6 +1210,7 @@ input, select, textarea {
     align-items: center;
     padding: 24px 0;
     border-bottom: 1px solid var(--border);
+    column-gap: 24px;
 }
 
 .cart-item-row:last-child {
