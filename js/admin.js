@@ -318,18 +318,17 @@ async function loadAdminOrders(manualTrigger = false) {
                     minute: '2-digit'
                 });
 
-                const customerName = order.profiles?.full_name || 'ลูกค้าทั่วไป';
-                const customerEmail = order.profiles?.email || 'ไม่มีอีเมล';
-                
                 let addressText = order.shipping_address || 'ไม่ได้ระบุที่อยู่';
                 let paymentMethodText = "ชำระเงินปลายทาง (COD)";
                 let slipBtnHtml = "";
                 let acceptBtnHtml = "";
+                let shippingCustomerName = "";
 
                 try {
                     if (order.shipping_address && order.shipping_address.startsWith('{')) {
                         const meta = JSON.parse(order.shipping_address);
-                        addressText = `${meta.fullName || ''}\n${meta.address || ''}`;
+                        shippingCustomerName = meta.fullName || '';
+                        addressText = meta.address || '';
                         if (meta.payment_method === 'TRANSFER') {
                             paymentMethodText = "โอนเงินผ่านธนาคาร";
                             if (meta.slip) {
@@ -346,6 +345,19 @@ async function loadAdminOrders(manualTrigger = false) {
                 } catch (e) {
                     console.error("Error parsing order shipping address:", e);
                 }
+
+                // Customer info display resolution
+                const profileName = order.profiles?.full_name || '';
+                const profileEmail = order.profiles?.email || '';
+
+                let mainDisplayName = profileName || shippingCustomerName;
+                if (!mainDisplayName && profileEmail) {
+                    mainDisplayName = profileEmail.split('@')[0];
+                }
+                if (!mainDisplayName) {
+                    mainDisplayName = 'ลูกค้าทั่วไป';
+                }
+
                 const addressFormatted = addressText.replace(/\n/g, ', ');
 
                 if (order.status === 'pending') {
@@ -370,8 +382,12 @@ async function loadAdminOrders(manualTrigger = false) {
                             <div style="font-size: 11px; color: var(--text-muted);">ID: #${order.id.substring(0, 8)}</div>
                         </td>
                         <td>
-                            <span style="font-weight: 600;">${customerName}</span>
-                            <div style="font-size: 11px; color: var(--text-muted);">${customerEmail}</div>
+                            <div style="font-weight: 700; color: var(--text); font-size: 13px; display: flex; align-items: center; gap: 5px;">
+                                <i class="fa-solid fa-circle-user" style="color: var(--primary); font-size: 14px;"></i>
+                                <span>${mainDisplayName}</span>
+                            </div>
+                            ${profileEmail ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;"><i class="fa-regular fa-envelope"></i> ${profileEmail}</div>` : ''}
+                            ${(shippingCustomerName && shippingCustomerName !== mainDisplayName) ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;"><i class="fa-solid fa-truck-ram"></i> ชื่อผู้รับ: ${shippingCustomerName}</div>` : ''}
                         </td>
                         <td>
                             <div style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${addressFormatted}">${addressFormatted}</div>
