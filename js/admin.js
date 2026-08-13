@@ -123,7 +123,7 @@ async function loadAdminProducts() {
         tableBody.innerHTML = products.map(product => {
             return `
                 <tr>
-                    <td><img src="${product.image_url}" alt="${product.name}"></td>
+                    <td><img src="${resolveImageUrl(product.image_url)}" alt="${product.name}"></td>
                     <td style="font-weight: 600;">${product.name}</td>
                     <td><span class="badge" style="margin-bottom: 0; padding: 4px 12px; font-size: 11px;">${product.category}</span></td>
                     <td style="font-weight: 700;">฿${product.price.toLocaleString()}</td>

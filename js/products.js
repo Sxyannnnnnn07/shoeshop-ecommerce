@@ -60,7 +60,7 @@ function renderProducts(productsList) {
             <article class="product-card" onclick="goToProductDetail(${product.id})">
                 ${badgeHtml}
                 <div class="product-image">
-                    <img src="${product.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'}" alt="${product.name}">
+                    <img src="${resolveImageUrl(product.image_url)}" alt="${product.name}">
                 </div>
                 <div class="product-content">
                     <span class="category">${product.category}</span>
@@ -198,7 +198,7 @@ async function fetchProductDetail(id) {
         detailContainer.innerHTML = `
             <!-- Product image -->
             <div class="detail-image-wrapper">
-                <img src="${product.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'}" alt="${product.name}">
+                <img src="${resolveImageUrl(product.image_url)}" alt="${product.name}">
             </div>
 
             <!-- Product info -->

@@ -37,7 +37,7 @@ async function loadFeaturedProducts() {
                 <article class="product-card" onclick="window.location.href='product-detail.html?id=${product.id}'" style="cursor: pointer;">
                     ${badgeHtml}
                     <div class="product-image">
-                        <img src="${product.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'}" alt="${product.name}">
+                        <img src="${resolveImageUrl(product.image_url)}" alt="${product.name}">
                     </div>
                     <div class="product-content">
                         <span class="category">${product.category}</span>

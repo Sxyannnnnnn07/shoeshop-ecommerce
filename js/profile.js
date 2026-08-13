@@ -106,7 +106,7 @@ async function loadUserProfileAndOrders() {
                 return `
                     <div class="order-item-summary">
                         <div class="order-item-summary-left">
-                            <img src="${product.image_url}" alt="${product.name}">
+                            <img src="${resolveImageUrl(product.image_url)}" alt="${product.name}">
                             <div>
                                 <span class="item-name">${product.name}</span>
                                 <div class="item-meta">จำนวน: ${item.quantity} | ราคาต่อชิ้น: ฿${item.price.toLocaleString()}</div>

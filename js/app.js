@@ -7,6 +7,16 @@ window.supabase = supabaseClient; // Expose globally for other scripts
 localStorage.removeItem('mock_admin_session');
 localStorage.removeItem('mock_supabase_session');
 
+// ================= IMAGE PATH HELPER =================
+// HTML files อยู่ใน html/ folder ดังนั้น relative path ต้องเพิ่ม ../
+function resolveImageUrl(url) {
+    const fallback = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
+    if (!url) return fallback;
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/') || url.startsWith('../')) return url;
+    return '../' + url;
+}
+window.resolveImageUrl = resolveImageUrl;
+
 // ================= TOAST NOTIFICATION HELPER =================
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');

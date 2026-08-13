@@ -68,7 +68,7 @@ function renderCartPage() {
                 <!-- Product Details -->
                 <div class="cart-item-info">
                     <div class="cart-item-image">
-                        <img src="${item.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'}" alt="${item.name}">
+                        <img src="${resolveImageUrl(item.image_url)}" alt="${item.name}">
                     </div>
                     <div class="cart-item-details">
                         <h4>${item.name}</h4>
@@ -162,7 +162,7 @@ function renderCheckoutSummary() {
         return `
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="${item.image_url}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: contain; background: #f8fafc; border: 1px solid var(--border); border-radius: 4px; padding: 2px;">
+                    <img src="${resolveImageUrl(item.image_url)}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: contain; background: #f8fafc; border: 1px solid var(--border); border-radius: 4px; padding: 2px;">
                     <div>
                         <span style="font-weight: 600;">${item.name}</span>
                         <div style="font-size: 11px; color: var(--text-muted);">ไซส์: ${item.selectedSize} | จำนวน: ${item.quantity}</div>
