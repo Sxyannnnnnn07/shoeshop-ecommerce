@@ -157,7 +157,11 @@ function updateHeaderNav(user, profile) {
     if (user) {
         if (profileBtn) {
             profileBtn.href = "profile.html";
-            profileBtn.innerHTML = `<i class="fa-solid fa-user"></i>`;
+            if (profile && profile.avatar_url) {
+                profileBtn.innerHTML = `<img src="${profile.avatar_url}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); vertical-align: middle;" alt="Profile">`;
+            } else {
+                profileBtn.innerHTML = `<i class="fa-solid fa-user"></i>`;
+            }
             profileBtn.title = "ประวัติส่วนตัว";
         }
         if (userEmailText) {

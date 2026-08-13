@@ -29,7 +29,11 @@ async function loadUserProfileAndOrders() {
         if (nameEl) nameEl.textContent = profile.full_name || "คนรักสนีกเกอร์";
         if (emailEl) emailEl.textContent = profile.email || user.email;
         if (avatarEl) {
-            avatarEl.textContent = (profile.full_name || user.email).charAt(0).toUpperCase();
+            if (profile.avatar_url) {
+                avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
+            } else {
+                avatarEl.textContent = (profile.full_name || user.email).charAt(0).toUpperCase();
+            }
         }
     } else {
         if (nameEl) nameEl.textContent = "คนรักสนีกเกอร์";
@@ -167,10 +171,102 @@ async function loadUserProfileAndOrders() {
     }
 }
 
-// Sidebar logout click
+// Image compression helper
+function compressAvatarImage(file, maxWidth = 300, maxHeight = 300, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(dataUrl);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
+// Handle avatar file upload
+async function handleAvatarUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        window.showToast("กรุณาเลือกไฟล์รูปภาพเท่านั้น!", "error");
+        return;
+    }
+
+    const { data: { session } } = await window.supabase.auth.getSession();
+    if (!session) {
+        window.showToast("กรุณาเข้าสู่ระบบก่อนเปลี่ยนรูปโปรไฟล์", "error");
+        return;
+    }
+
+    const avatarEl = document.getElementById('profileAvatar');
+    if (avatarEl) {
+        avatarEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i>`;
+    }
+
+    try {
+        const compressedBase64 = await compressAvatarImage(file);
+
+        const { error } = await window.supabase
+            .from('profiles')
+            .update({ avatar_url: compressedBase64 })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        window.showToast("อัปเดตรูปโปรไฟล์สำเร็จเรียบร้อยแล้ว!", "success");
+
+        if (avatarEl) {
+            avatarEl.innerHTML = `<img src="${compressedBase64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
+        }
+
+        // Refresh global header nav avatar
+        if (typeof window.checkUserSession === 'function') {
+            window.checkUserSession();
+        }
+
+    } catch (err) {
+        console.error("Failed to upload profile avatar:", err);
+        window.showToast(err.message || "ไม่สามารถอัปเดตรูปโปรไฟล์ได้", "error");
+        loadUserProfileAndOrders();
+    }
+}
+
+// Sidebar logout & avatar upload click handlers
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('ordersList')) {
         loadUserProfileAndOrders();
+    }
+
+    const avatarInput = document.getElementById('avatarFileInput');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', handleAvatarUpload);
     }
 
     const sidebarLogout = document.getElementById('profileLogoutBtn');
