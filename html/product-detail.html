@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สินค้าทั้งหมด | jehha-sneaker</title>
+    <title>รายละเอียดสินค้า | jehha-sneaker</title>
     <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,14 +12,14 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <!-- CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <style>
         body, button, input, select, textarea {
             font-family: 'Poppins', 'Prompt', sans-serif;
         }
     </style>
 
-    <link rel="icon" type="image/jpeg" href="images/logo.jpg">
+    <link rel="icon" type="image/jpeg" href="../images/logo.jpg">
 </head>
 <body>
     <!-- ================= HEADER ================= -->
@@ -31,7 +31,7 @@
                 </div>
                 <ul class="nav-links">
                     <li><a href="index.html">หน้าแรก</a></li>
-                    <li><a href="products.html" class="active">ร้านค้า</a></li>
+                    <li><a href="products.html">ร้านค้า</a></li>
                     <li><a href="index.html#collection">คอลเลกชัน</a></li>
                     <li><a href="profile.html">คำสั่งซื้อของฉัน</a></li>
                     <li class="admin-only" style="display: none;"><a href="admin.html" style="color: var(--primary); font-weight: 700;">ระบบแอดมิน</a></li>
@@ -55,82 +55,19 @@
         </div>
     </header>
 
-    <!-- ================= CATALOG SECTION ================= -->
-    <section class="catalog-section">
+    <!-- ================= PRODUCT DETAIL SECTION ================= -->
+    <section class="product-detail-section">
         <div class="container">
-            <div class="catalog-layout">
-                <!-- Sidebar Filters -->
-                <aside class="filters-panel">
-                    <div class="filter-group">
-                        <h4>ค้นหาคู่ที่ใช่</h4>
-                        <div class="search-box">
-                            <input type="text" id="searchInput" placeholder="พิมพ์เพื่อค้นหาชื่อรองเท้า...">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </div>
-                    </div>
+            <a href="products.html" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-muted); margin-bottom: 30px; transition: var(--transition);" id="backToCatalog">
+                <i class="fa-solid fa-arrow-left"></i> ย้อนกลับไปหน้ารวมสินค้า
+            </a>
 
-                    <div class="filter-group">
-                        <h4>หมวดหมู่รองเท้า</h4>
-                        <ul class="filter-list">
-                            <li>
-                                <label>
-                                    <input type="checkbox" name="category" value="Running" class="category-filter"> รองเท้าวิ่ง (Running)
-                                </label>
-                            </li>
-                            <li>
-                                <label>
-                                    <input type="checkbox" name="category" value="Basketball" class="category-filter"> รองเท้าบาส (Basketball)
-                                </label>
-                            </li>
-                            <li>
-                                <label>
-                                    <input type="checkbox" name="category" value="Lifestyle" class="category-filter"> ไลฟ์สไตล์ (Lifestyle)
-                                </label>
-                            </li>
-                            <li>
-                                <label>
-                                    <input type="checkbox" name="category" value="Training" class="category-filter"> เทรนนิ่ง (Training)
-                                </label>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="filter-group">
-                        <h4>กรองตามราคา</h4>
-                        <div class="price-slider-group">
-                            <div class="price-inputs">
-                                <input type="number" id="minPrice" placeholder="ต่ำสุด (฿)" min="0">
-                                <span>-</span>
-                                <input type="number" id="maxPrice" placeholder="สูงสุด (฿)" min="0">
-                            </div>
-                        </div>
-                    </div>
-
-                    <button class="btn" style="width: 100%;" id="resetFilters">ล้างตัวกรองทั้งหมด</button>
-                </aside>
-
-                <!-- Product Grid & Sort -->
-                <main class="catalog-main">
-                    <div class="catalog-header">
-                        <h2>รายการสินค้าทั้งหมด</h2>
-                        <div class="catalog-sort">
-                            <select id="sortBy">
-                                <option value="default">เรียงลำดับ: แนะนำ</option>
-                                <option value="price-asc">ราคา: ต่ำสุด - สูงสุด</option>
-                                <option value="price-desc">ราคา: สูงสุด - ต่ำสุด</option>
-                                <option value="name-asc">ชื่อ: ก - ฮ / A - Z</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="product-grid" id="productsGrid">
-                        <!-- Products loaded from DB -->
-                        <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--text-muted);">
-                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 12px; color: var(--primary);"></i>
-                            <p>กำลังค้นหาสินค้าจากสต็อก...</p>
-                        </div>
-                    </div>
-                </main>
+            <div class="detail-layout" id="detailLayout">
+                <!-- Loader inside details -->
+                <div style="text-align: center; grid-column: 1/-1; padding: 100px; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; margin-bottom: 16px; color: var(--primary);"></i>
+                    <p>กำลังดึงข้อมูลรายละเอียดสินค้า...</p>
+                </div>
             </div>
         </div>
     </section>
@@ -142,7 +79,7 @@
                 <div class="footer-about">
                     
                     <div class="footer-logo-wrapper" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                        <img src="images/logo.jpg" alt="Logo" style="height: 40px; border-radius: 8px;">
+                        <img src="../images/logo.jpg" alt="Logo" style="height: 40px; border-radius: 8px;">
                         <h3 style="margin-bottom: 0; font-size: 24px; font-weight: 800; color: #ffffff;">jehha-<span style="color: var(--primary);">sneaker</span></h3>
                     </div>
                     <p>สนีกเกอร์ระดับพรีเมียมที่ออกแบบมาเพื่อความสบายในทุกวัน สไตล์สปอร์ต และแฟชั่นแนวสตรีท</p>
@@ -177,8 +114,8 @@
 
     <!-- Supabase and Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/products.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/products.js"></script>
 </body>
 </html>
