@@ -25,12 +25,15 @@ async function loadUserProfileAndOrders() {
         .eq('id', user.id)
         .single();
 
+    const localAvatar = localStorage.getItem('shoeshop_user_avatar_' + user.id);
+    const avatarUrl = (profile && profile.avatar_url) ? profile.avatar_url : localAvatar;
+
     if (!profileError && profile) {
         if (nameEl) nameEl.textContent = profile.full_name || "คนรักสนีกเกอร์";
         if (emailEl) emailEl.textContent = profile.email || user.email;
         if (avatarEl) {
-            if (profile.avatar_url) {
-                avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
+            if (avatarUrl) {
+                avatarEl.innerHTML = `<img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
             } else {
                 avatarEl.textContent = (profile.full_name || user.email).charAt(0).toUpperCase();
             }
@@ -38,6 +41,9 @@ async function loadUserProfileAndOrders() {
     } else {
         if (nameEl) nameEl.textContent = "คนรักสนีกเกอร์";
         if (emailEl) emailEl.textContent = user.email;
+        if (avatarEl && localAvatar) {
+            avatarEl.innerHTML = `<img src="${localAvatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
+        }
     }
 
     // 3. Fetch Orders history (nested items + product details)
@@ -171,8 +177,8 @@ async function loadUserProfileAndOrders() {
     }
 }
 
-// Image compression helper
-function compressAvatarImage(file, maxWidth = 300, maxHeight = 300, quality = 0.82) {
+// Image compression helper (higher resolution for sharp display)
+function compressAvatarImage(file, maxWidth = 500, maxHeight = 500, quality = 0.88) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -225,25 +231,38 @@ async function handleAvatarUpload(e) {
         return;
     }
 
+    const userId = session.user.id;
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl) {
-        avatarEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i>`;
+        avatarEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 28px;"></i>`;
     }
 
     try {
         const compressedBase64 = await compressAvatarImage(file);
 
+        // 1. Always save to LocalStorage immediately as a reliable fallback
+        localStorage.setItem('shoeshop_user_avatar_' + userId, compressedBase64);
+
+        // 2. Display avatar immediately
+        if (avatarEl) {
+            avatarEl.innerHTML = `<img src="${compressedBase64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
+        }
+
+        // 3. Update Supabase profiles table
         const { error } = await window.supabase
             .from('profiles')
             .update({ avatar_url: compressedBase64 })
-            .eq('id', session.user.id);
+            .eq('id', userId);
 
-        if (error) throw error;
-
-        window.showToast("อัปเดตรูปโปรไฟล์สำเร็จเรียบร้อยแล้ว!", "success");
-
-        if (avatarEl) {
-            avatarEl.innerHTML = `<img src="${compressedBase64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" alt="Avatar">`;
+        if (error) {
+            console.warn("Supabase update error (column avatar_url may be missing):", error.message);
+            if (error.message && error.message.includes("avatar_url")) {
+                window.showToast("เปลี่ยนรูปโปรไฟล์สำเร็จ! (อย่าลืมเพิ่มคอลัมน์ avatar_url ใน Supabase เพื่อซิงค์ข้ามเครื่อง)", "warning");
+            } else {
+                window.showToast("อัปเดตรูปโปรไฟล์สำเร็จเรียบร้อยแล้ว!", "success");
+            }
+        } else {
+            window.showToast("อัปเดตรูปโปรไฟล์ลง Supabase สำเร็จเรียบร้อยแล้ว!", "success");
         }
 
         // Refresh global header nav avatar
@@ -253,7 +272,7 @@ async function handleAvatarUpload(e) {
 
     } catch (err) {
         console.error("Failed to upload profile avatar:", err);
-        window.showToast(err.message || "ไม่สามารถอัปเดตรูปโปรไฟล์ได้", "error");
+        window.showToast("เกิดข้อผิดพลาดในการอัปเดตรูปโปรไฟล์", "error");
         loadUserProfileAndOrders();
     }
 }

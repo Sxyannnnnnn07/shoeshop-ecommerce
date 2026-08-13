@@ -157,8 +157,10 @@ function updateHeaderNav(user, profile) {
     if (user) {
         if (profileBtn) {
             profileBtn.href = "profile.html";
-            if (profile && profile.avatar_url) {
-                profileBtn.innerHTML = `<img src="${profile.avatar_url}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); vertical-align: middle;" alt="Profile">`;
+            const localAvatar = localStorage.getItem('shoeshop_user_avatar_' + user.id);
+            const avatarSrc = (profile && profile.avatar_url) ? profile.avatar_url : localAvatar;
+            if (avatarSrc) {
+                profileBtn.innerHTML = `<img src="${avatarSrc}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); vertical-align: middle;" alt="Profile">`;
             } else {
                 profileBtn.innerHTML = `<i class="fa-solid fa-user"></i>`;
             }
