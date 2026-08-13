@@ -1609,45 +1609,56 @@ input, select, textarea {
 
 /* ================= ADMIN DASHBOARD ================= */
 .admin-section {
-    padding: 60px 0;
+    padding: 40px 0;
 }
 
 .admin-layout {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 .admin-sidebar {
     background-color: var(--bg-dark);
     color: var(--text-light);
     border-radius: var(--radius);
-    padding: 24px;
-    height: fit-content;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .admin-sidebar-menu {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    gap: 10px;
 }
 
 .admin-menu-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: 8px;
+    padding: 10px 20px;
     border-radius: 8px;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 14px;
     color: #94a3b8;
     cursor: pointer;
     transition: var(--transition);
 }
 
-.admin-menu-item:hover,
-.admin-menu-item.active {
+.admin-menu-item:hover {
     color: var(--text-light);
-    background-color: var(--border-dark);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-menu-item.active {
+    color: #ffffff;
+    background-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
 }
 
 .admin-content-area {
@@ -1656,6 +1667,7 @@ input, select, textarea {
     border-radius: var(--radius);
     padding: 30px;
     min-height: 600px;
+    width: 100%;
 }
 
 .admin-header-row {

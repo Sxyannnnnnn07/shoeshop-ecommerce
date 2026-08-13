@@ -68,9 +68,12 @@
 
             <!-- Admin Layout -->
             <div class="admin-layout" id="adminDashboardLayout" style="display: none;">
-                <!-- Sidebar tabs -->
-                <aside class="admin-sidebar">
-                    <h3 style="font-size: 16px; margin-bottom: 20px; color: var(--text-light); text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--border-dark); padding-bottom: 10px;">ระบบควบคุมแอดมิน</h3>
+                <!-- Topbar Control Menu -->
+                <div class="admin-sidebar">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-sliders" style="color: var(--primary); font-size: 18px;"></i>
+                        <h3 style="font-size: 16px; margin: 0; color: var(--text-light); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">ระบบควบคุมแอดมิน</h3>
+                    </div>
                     <div class="admin-sidebar-menu">
                         <div class="admin-menu-item active" id="tabProductsBtn">
                             <i class="fa-solid fa-boxes-stacked"></i> จัดการคลังสินค้า
@@ -79,7 +82,7 @@
                             <i class="fa-solid fa-receipt"></i> จัดการคำสั่งซื้อลูกค้า
                         </div>
                     </div>
-                </aside>
+                </div>
 
                 <!-- Content Area -->
                 <main class="admin-content-area">
