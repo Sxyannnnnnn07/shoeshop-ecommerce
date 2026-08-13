@@ -254,10 +254,22 @@ async function deleteProduct(id) {
 
 // ================= ORDERS MANAGEMENT =================
 
+let autoRefreshInterval = null;
+
 // Fetch and render orders
-async function loadAdminOrders() {
+async function loadAdminOrders(manualTrigger = false) {
     const tableBody = document.getElementById('adminOrdersTableBody');
+    const refreshBtn = document.getElementById('refreshOrdersBtn');
+    const refreshIcon = document.getElementById('refreshOrdersIcon');
+
     if (!tableBody) return;
+
+    if (refreshIcon) {
+        refreshIcon.classList.add('fa-spin');
+    }
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+    }
 
     try {
         const { data: orders, error } = await window.supabase
@@ -283,100 +295,132 @@ async function loadAdminOrders() {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        adminOrders = orders;
+        adminOrders = orders || [];
 
-        if (orders.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มีลูกค้าสั่งซื้อสินค้าเข้ามาในระบบ</td></tr>`;
-            return;
-        }
-
-        tableBody.innerHTML = orders.map(order => {
-            const date = new Date(order.created_at).toLocaleDateString('th-TH', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            const customerName = order.profiles?.full_name || 'ลูกค้าทั่วไป';
-            const customerEmail = order.profiles?.email || 'ไม่มีอีเมล';
-            
-            let addressText = order.shipping_address;
-            let paymentMethodText = "ชำระเงินปลายทาง (COD)";
-            let slipBtnHtml = "";
-            let acceptBtnHtml = "";
-
-            try {
-                if (order.shipping_address && order.shipping_address.startsWith('{')) {
-                    const meta = JSON.parse(order.shipping_address);
-                    addressText = `${meta.fullName}\n${meta.address}`;
-                    if (meta.payment_method === 'TRANSFER') {
-                        paymentMethodText = "โอนเงินผ่านธนาคาร";
-                        if (meta.slip) {
-                            slipBtnHtml = `
-                                <button onclick="viewPaymentSlip('${meta.slip}')" class="btn" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; background-color: var(--primary); color: white; display: inline-flex; align-items: center; gap: 4px; border: none; font-weight: 600; border-radius: 4px; cursor: pointer;">
-                                    <i class="fa-solid fa-receipt"></i> ดูสลิปโอนเงิน
-                                </button>
-                            `;
-                        } else {
-                            slipBtnHtml = `<span style="color: var(--danger); font-size: 11px; display: block; margin-top: 5px; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> ไม่มีสลิปแนบ</span>`;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("Error parsing order shipping address:", e);
-            }
-            const addressFormatted = addressText.replace(/\n/g, ', ');
-
-            if (order.status === 'pending') {
-                acceptBtnHtml = `
-                    <button onclick="approveOrder('${order.id}')" class="btn" style="font-size: 11px; padding: 6px 8px; margin-top: 6px; background-color: #10b981; width: 100%; border: none; font-weight: 700; color: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.2s;">
-                        <i class="fa-solid fa-circle-check"></i> ยอมรับคำสั่งซื้อ
-                    </button>
-                `;
-            }
-
-            const itemsSummary = order.order_items.map(item => {
-                const name = item.products?.name || 'ลบออกจากระบบ';
-                return `${name} (x${item.quantity})`;
-            }).join(', ');
-
-            return `
+        if (adminOrders.length === 0) {
+            tableBody.innerHTML = `
                 <tr>
-                    <td>
-                        <span style="font-weight: 600;">${date} น.</span>
-                        <div style="font-size: 11px; color: var(--text-muted);">ID: #${order.id.substring(0, 8)}</div>
-                    </td>
-                    <td>
-                        <span style="font-weight: 600;">${customerName}</span>
-                        <div style="font-size: 11px; color: var(--text-muted);">${customerEmail}</div>
-                    </td>
-                    <td>
-                        <div style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${addressFormatted}">${addressFormatted}</div>
-                        <div style="font-size: 11px; color: var(--text-muted);">เบอร์ติดต่อ: ${order.phone}</div>
-                        <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-bottom: 4px;">สินค้า: ${itemsSummary}</div>
-                        <div style="font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                            <span>ชำระเงิน: ${paymentMethodText}</span>
-                            ${slipBtnHtml}
-                        </div>
-                    </td>
-                    <td style="font-weight: 800; color: var(--primary);">฿${order.total.toLocaleString()}</td>
-                    <td>
-                        <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 6px 12px; border-radius: 6px; font-weight: 600; outline: none; border: 1px solid var(--border); cursor: pointer;" class="status-select-${order.status}">
-                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>รอดำเนินการ (Pending)</option>
-                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>จัดส่งแล้ว (Shipped)</option>
-                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>ได้รับของแล้ว (Delivered)</option>
-                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>ยกเลิกออเดอร์ (Cancelled)</option>
-                        </select>
-                        ${acceptBtnHtml}
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                        <i class="fa-solid fa-inbox" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px; display: block;"></i>
+                        <span style="font-weight: 700; font-size: 15px; display: block; color: var(--text);">ยังไม่มีลูกค้าสั่งซื้อสินค้าเข้ามาในระบบ</span>
+                        <p style="font-size: 12px; color: #64748b; margin-top: 6px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                            หากลูกค้ามีการกดสั่งซื้อแล้วแต่ยังไม่แสดงที่นี่ อาจเกิดจากสิทธิ์ Row Level Security (RLS) บน Supabase บล็อกการดึงข้อมูล กรุณาตั้งค่า RLS Policy ให้บทบาท Admin อ่านตาราง orders ได้
+                        </p>
                     </td>
                 </tr>
             `;
-        }).join('');
+        } else {
+            tableBody.innerHTML = adminOrders.map(order => {
+                const date = new Date(order.created_at).toLocaleDateString('th-TH', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const customerName = order.profiles?.full_name || 'ลูกค้าทั่วไป';
+                const customerEmail = order.profiles?.email || 'ไม่มีอีเมล';
+                
+                let addressText = order.shipping_address || 'ไม่ได้ระบุที่อยู่';
+                let paymentMethodText = "ชำระเงินปลายทาง (COD)";
+                let slipBtnHtml = "";
+                let acceptBtnHtml = "";
+
+                try {
+                    if (order.shipping_address && order.shipping_address.startsWith('{')) {
+                        const meta = JSON.parse(order.shipping_address);
+                        addressText = `${meta.fullName || ''}\n${meta.address || ''}`;
+                        if (meta.payment_method === 'TRANSFER') {
+                            paymentMethodText = "โอนเงินผ่านธนาคาร";
+                            if (meta.slip) {
+                                slipBtnHtml = `
+                                    <button onclick="viewPaymentSlip('${meta.slip}')" class="btn" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; background-color: var(--primary); color: white; display: inline-flex; align-items: center; gap: 4px; border: none; font-weight: 600; border-radius: 4px; cursor: pointer;">
+                                        <i class="fa-solid fa-receipt"></i> ดูสลิปโอนเงิน
+                                    </button>
+                                `;
+                            } else {
+                                slipBtnHtml = `<span style="color: var(--danger); font-size: 11px; display: block; margin-top: 5px; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> ไม่มีสลิปแนบ</span>`;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing order shipping address:", e);
+                }
+                const addressFormatted = addressText.replace(/\n/g, ', ');
+
+                if (order.status === 'pending') {
+                    acceptBtnHtml = `
+                        <button onclick="approveOrder('${order.id}')" class="btn" style="font-size: 11px; padding: 6px 8px; margin-top: 6px; background-color: #10b981; width: 100%; border: none; font-weight: 700; color: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.2s;">
+                            <i class="fa-solid fa-circle-check"></i> ยอมรับคำสั่งซื้อ
+                        </button>
+                    `;
+                }
+
+                const itemsSummary = (order.order_items && order.order_items.length > 0)
+                    ? order.order_items.map(item => {
+                        const name = item.products?.name || 'รายการสินค้า';
+                        return `${name} (x${item.quantity})`;
+                    }).join(', ')
+                    : 'ไม่ระบุสินค้า';
+
+                return `
+                    <tr>
+                        <td>
+                            <span style="font-weight: 600;">${date} น.</span>
+                            <div style="font-size: 11px; color: var(--text-muted);">ID: #${order.id.substring(0, 8)}</div>
+                        </td>
+                        <td>
+                            <span style="font-weight: 600;">${customerName}</span>
+                            <div style="font-size: 11px; color: var(--text-muted);">${customerEmail}</div>
+                        </td>
+                        <td>
+                            <div style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${addressFormatted}">${addressFormatted}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">เบอร์ติดต่อ: ${order.phone || '-'}</div>
+                            <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-bottom: 4px;">สินค้า: ${itemsSummary}</div>
+                            <div style="font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                <span>ชำระเงิน: ${paymentMethodText}</span>
+                                ${slipBtnHtml}
+                            </div>
+                        </td>
+                        <td style="font-weight: 800; color: var(--primary);">฿${(order.total || 0).toLocaleString()}</td>
+                        <td>
+                            <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 6px 12px; border-radius: 6px; font-weight: 600; outline: none; border: 1px solid var(--border); cursor: pointer;" class="status-select-${order.status}">
+                                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>รอดำเนินการ (Pending)</option>
+                                <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>จัดส่งแล้ว (Shipped)</option>
+                                <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>ได้รับของแล้ว (Delivered)</option>
+                                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>ยกเลิกออเดอร์ (Cancelled)</option>
+                            </select>
+                            ${acceptBtnHtml}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        if (manualTrigger) {
+            window.showToast("อัปเดตข้อมูลคำสั่งซื้อล่าสุดเรียบร้อยแล้ว!", "success");
+        }
 
     } catch (err) {
         console.error("Failed to load orders in admin:", err);
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 30px;">ล้มเหลวในการดาวน์โหลดตารางข้อมูลคำสั่งซื้อ</td></tr>`;
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--danger); padding: 30px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 8px;"></i><br>
+                    ล้มเหลวในการดาวน์โหลดตารางข้อมูลคำสั่งซื้อ: ${err.message || 'โปรดตรวจสอบการเชื่อมต่อหรือ RLS Policy'}
+                </td>
+            </tr>
+        `;
+        if (manualTrigger) {
+            window.showToast("เกิดข้อผิดพลาดในการโหลดข้อมูลคำสั่งซื้อ", "error");
+        }
+    } finally {
+        if (refreshIcon) {
+            refreshIcon.classList.remove('fa-spin');
+        }
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+        }
     }
 }
 
@@ -419,6 +463,7 @@ window.approveOrder = approveOrder;
 window.openEditProduct = openEditProduct;
 window.deleteProduct = deleteProduct;
 window.updateOrderStatus = updateOrderStatus;
+window.loadAdminOrders = loadAdminOrders;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -429,5 +474,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('addProductForm')?.addEventListener('submit', handleAddProductSubmit);
         document.getElementById('editProductForm')?.addEventListener('submit', handleEditProductSubmit);
+        
+        // Refresh Orders Button Click Event
+        const refreshBtn = document.getElementById('refreshOrdersBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                loadAdminOrders(true);
+            });
+        }
+
+        // Auto-polling orders every 30 seconds
+        if (!autoRefreshInterval) {
+            autoRefreshInterval = setInterval(() => {
+                const ordersTab = document.getElementById('tabOrdersContent');
+                if (ordersTab && ordersTab.style.display !== 'none') {
+                    loadAdminOrders(false);
+                }
+            }, 30000);
+        }
     }
 });
